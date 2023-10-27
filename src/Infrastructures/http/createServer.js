@@ -43,7 +43,6 @@ const createServer = async (container) => {
       if (!translatedError.isServer) {
         return h.continue
       }
-
       // penanganan server error sesuai kebutuhan
       const newResponse = h.response({
         status: 'error',
