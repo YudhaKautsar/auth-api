@@ -1,8 +1,8 @@
 const createServer = require('../createServer')
 
 describe('HTTP server', () => {
-  it('should response 404 when request unregitered route', async () => {
-    // Arrage
+  it('should response 404 when request unregistered route', async () => {
+    // Arrange
     const server = await createServer({})
 
     // Action

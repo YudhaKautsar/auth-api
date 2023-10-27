@@ -3,7 +3,7 @@ const AuthenticationTokenManager = require('../../security/AuthenticationTokenMa
 const RefreshAuthenticationUseCase = require('../RefreshAuthenticationUseCase')
 
 describe('RefreshAuthenticationUseCase', () => {
-  it('should throw erro if use case payload not contain refresh token', async () => {
+  it('should throw error if use case payload not contain refresh token', async () => {
     // Arrage
     const useCasePayload = {}
     const refreshAuthenticationUseCase = new RefreshAuthenticationUseCase({})

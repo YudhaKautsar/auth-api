@@ -34,7 +34,7 @@ describe('UserRepositoryPostgres', () => {
   })
 
   describe('addUser function', () => {
-    it('should persist register user adn return  registered user correctly', async () => {
+    it('should persist register user and return  registered user correctly', async () => {
       // Arrage
       const registerUser = new RegisterUser({
         username: 'dicoding',

@@ -1,9 +1,9 @@
+const pool = require('../../database/postgres/pool')
+const UsersTableTestHelper = require('../../../../tests/UsersTableTestHelper')
 const AuthenticationsTableTestHelper = require('../../../../tests/AuthenticationsTableTestHelper')
 const container = require('../../container')
 const createServer = require('../createServer')
 const AuthenticationTokenManager = require('../../../Applications/security/AuthenticationTokenManager')
-const pool = require('../../database/postgres/pool')
-const UsersTableTestHelper = require('../../../../tests/UsersTableTestHelper')
 
 describe('/authentications endpoint', () => {
   afterAll(async () => {
@@ -23,7 +23,7 @@ describe('/authentications endpoint', () => {
         password: 'secret'
       }
       const server = await createServer(container)
-      // Add User
+      // add user
       await server.inject({
         method: 'POST',
         url: '/users',
@@ -78,7 +78,7 @@ describe('/authentications endpoint', () => {
         password: 'wrong_password'
       }
       const server = await createServer(container)
-      // Add User
+      // Add user
       await server.inject({
         method: 'POST',
         url: '/users',
@@ -151,7 +151,7 @@ describe('/authentications endpoint', () => {
     it('should return 200 and new access token', async () => {
       // Arrange
       const server = await createServer(container)
-      // Add User
+      // add user
       await server.inject({
         method: 'POST',
         url: '/users',
@@ -161,8 +161,7 @@ describe('/authentications endpoint', () => {
           fullname: 'Dicoding Indonesia'
         }
       })
-
-      // Login User
+      // login user
       const loginResponse = await server.inject({
         method: 'POST',
         url: '/authentications',
@@ -233,7 +232,7 @@ describe('/authentications endpoint', () => {
         method: 'PUT',
         url: '/authentications',
         payload: {
-          refreshToken: 'invaliad_refresh_token'
+          refreshToken: 'invalid_refresh_token'
         }
       })
 

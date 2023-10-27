@@ -17,7 +17,7 @@ describe('a Registered entities', () => {
     const payload = {
       id: 123,
       username: 'dicoding',
-      fullname: 'Dicoding Indonesia'
+      fullname: {}
     }
 
     // Action and Assert

@@ -21,7 +21,7 @@ DomainErrorTranslator._directories = {
          new InvariantError('username dan password harus string'),
   'REFRESH_AUTHENTICATION_USE_CASE.NOT_CONTAIN_REFRESH_TOKEN':
          new InvariantError('harus mengirimkan token refresh'),
-  'REFRESH_AUTHENTICATION_USER_CASE.PAYLOAD_NOT_MEET_DATA_TYPE_SPECIFICATION':
+  'REFRESH_AUTHENTICATION_USE_CASE.PAYLOAD_NOT_MEET_DATA_TYPE_SPECIFICATION':
          new InvariantError('refresh token harus string'),
   'DELETE_AUTHENTICATION_USE_CASE.NOT_CONTAIN_REFRESH_TOKEN':
          new InvariantError('harus mengirimkan token refresh'),
