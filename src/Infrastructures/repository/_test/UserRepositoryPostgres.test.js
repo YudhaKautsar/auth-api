@@ -54,7 +54,7 @@ describe('UserRepositoryPostgres', () => {
     })
 
     it('should return registered user correctly', async () => {
-      // Arrage
+      // Arrange
       const registerUser = new RegisterUser({
         username: 'dicoding',
         password: 'secret_password',
