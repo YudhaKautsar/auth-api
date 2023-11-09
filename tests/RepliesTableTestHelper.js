@@ -1,18 +1,18 @@
 /* istanbul ignore file */
-
 const pool = require('../src/Infrastructures/database/postgres/pool')
 
-const RepliesTableTestHelper = {
+const ReplyTableTestHelper = {
   async addReply ({
     id = 'reply-123',
-    threadId = 'thread-123',
+    content = 'sebuah reply content',
+    date = new Date().toISOString(),
+    publisher = 'user-123',
     commentId = 'comment-123',
-    owner = 'user-123',
-    content = 'sebuah balasan'
+    threadId = 'thread-123'
   }) {
     const query = {
-      text: 'INSERT INTO replies(id, thread_id, comment_id, publisher, content) VALUES($1, $2, $3, $4, $5)',
-      values: [id, threadId, commentId, owner, content]
+      text: 'INSERT INTO replies VALUES($1, $2, $3, $4, $5, $6, $7)',
+      values: [id, content, publisher, date, false, commentId, threadId]
     }
 
     await pool.query(query)
@@ -20,22 +20,31 @@ const RepliesTableTestHelper = {
 
   async findReplyById (id) {
     const query = {
-      text: `SELECT R.id, R.comment_id, R.content, R.date, R.is_delete, U.username
-            FROM replies R
-            INNER JOIN users U ON R.publisher = U.id
-            WHERE R.id = $1`,
+      text: 'SELECT * FROM replies WHERE id = $1',
       values: [id]
     }
 
     const result = await pool.query(query)
+
     return result.rows
   },
 
-  async deleteReplyById (id) {
+  async checkIsDeletedReplyById (id) {
     const query = {
-      text: 'UPDATE replies SET is_delete = true WHERE id = $1',
+      text: 'SELECT is_delete FROM replies WHERE id = $1',
       values: [id]
     }
+
+    const result = await pool.query(query)
+    return result.rows[0].is_delete
+  },
+
+  async deleteReply (id) {
+    const query = {
+      text: 'UPDATE replies SET is_delete = TRUE WHERE id = $1',
+      values: [id]
+    }
+
     await pool.query(query)
   },
 
@@ -44,4 +53,4 @@ const RepliesTableTestHelper = {
   }
 }
 
-module.exports = RepliesTableTestHelper
+module.exports = ReplyTableTestHelper

@@ -1,84 +1,78 @@
-const AuthorizationError = require('../../Commons/exceptions/AuthorizationError')
-const NotFoundError = require('../../Commons/exceptions/NotFoundError')
-const {
-  mapCommentDbToModel,
-  getMapCommentDbToModel
-} = require('../../Commons/utils')
 const CommentRepository = require('../../Domains/comments/CommentRepository')
 const AddedComment = require('../../Domains/comments/entities/AddedComment')
+const NotFoundError = require('../../Commons/exceptions/NotFoundError')
+const AuthorizationError = require('../../Commons/exceptions/AuthorizationError')
 
 class CommentRepositoryPostgres extends CommentRepository {
   constructor (pool, idGenerator) {
     super()
+
     this._pool = pool
     this._idGenerator = idGenerator
   }
 
-  async addComment (newComment, threadId, owner) {
-    const { content } = newComment
+  async addComment (comment) {
+    const { content, publisher, threadId } = comment
     const id = `comment-${this._idGenerator()}`
 
+    const date = new Date().toISOString()
+
     const query = {
-      text: 'INSERT INTO comments(id, thread_id, content, publisher) VALUES($1, $2, $3, $4) RETURNING id, content, publisher',
-      values: [id, threadId, content, owner]
+      text: 'INSERT INTO comments VALUES($1, $2, $3, $4, $5, $6) RETURNING id, content, publisher',
+      values: [id, content, publisher, date, false, threadId]
+    }
+
+    const result = await this._pool.query(query)
+    return new AddedComment(result.rows[0])
+  }
+
+  async checkAvailabilityComment (commentId) {
+    const query = {
+      text: 'SELECT id FROM comments WHERE id = $1',
+      values: [commentId]
     }
 
     const result = await this._pool.query(query)
 
-    return new AddedComment(result.rows.map(mapCommentDbToModel)[0])
+    if (!result.rowCount) {
+      throw new NotFoundError('komentar tidak ditemukan')
+    }
   }
 
-  async getCommentsByThreadId (threadId) {
+  async verifyCommentpublisher (commentId, publisher) {
     const query = {
-      text: `SELECT comments.id, comments.date, comments.content, comments.is_delete, users.username
-            FROM comments
-            INNER JOIN users ON comments.publisher = users.id
-            WHERE thread_id = $1
-            ORDER BY DATE ASC`,
+      text: 'SELECT id FROM comments WHERE id = $1 AND publisher = $2',
+      values: [commentId, publisher]
+    }
+
+    const result = await this._pool.query(query)
+
+    if (!result.rowCount) {
+      throw new AuthorizationError('anda tidak dapat menghapus komentar orang lain!')
+    }
+  }
+
+  async deleteComment (commentId) {
+    const query = {
+      text: 'UPDATE comments SET is_delete = $1 WHERE id = $2',
+      values: [true, commentId]
+    }
+
+    await this._pool.query(query)
+  }
+
+  async getCommentThread (threadId) {
+    const query = {
+      text: `SELECT A.id, B.username, A.date, A.content, A.is_delete
+        FROM comments A
+        LEFT JOIN users B ON A.publisher = B.id
+        WHERE A.thread_id = $1
+        ORDER BY A.date ASC`,
       values: [threadId]
     }
 
     const result = await this._pool.query(query)
-
-    return result.rows.map(getMapCommentDbToModel)
-  }
-
-  async verifyCommentPublisher (id, owner) {
-    const query = {
-      text: 'SELECT id, publisher FROM comments WHERE id= $1',
-      values: [id]
-    }
-
-    const result = await this._pool.query(query)
-
-    if (result.rows[0].publisher !== owner) {
-      throw new AuthorizationError('Anda bukan publisher')
-    }
-  }
-
-  async deleteCommentById (id) {
-    const query = {
-      text: 'UPDATE comments SET is_delete = true WHERE id = $1',
-      values: [id]
-    }
-
-    const result = await this._pool.query(query)
-
-    if (!result.rowCount) {
-      throw new NotFoundError('Komentar gagal dihapus, Id tidak ditemukan')
-    }
-  }
-
-  async verifyExistingComment (id) {
-    const query = {
-      text: 'SELECT id FROM comments WHERE id = $1',
-      values: [id]
-    }
-
-    const result = await this.pool.query(query)
-    if (!result.rowCount) {
-      throw new NotFoundError('Komputer tidak ditemukan')
-    }
+    return result.rows
   }
 }
 

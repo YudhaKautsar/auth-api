@@ -7,108 +7,94 @@ const NewComment = require('../../../Domains/comments/entities/NewComment')
 describe('CommentUseCase', () => {
   describe('addComment', () => {
     it('should orchestrating the add comment action correctly', async () => {
-      // Arrange
-      const userIdFromAccessToken = 'user-123'
-
-      const useCaseParam = {
-        threadId: 'thread-123'
-      }
-
       const useCasePayload = {
-        content: 'sebuah comment'
+        threadId: 'thread-123',
+        content: 'sebuah comment',
+        publisher: 'user-321'
       }
 
-      const expectedAddedThread = new AddedComment({
+      const expectedAddedComment = new AddedComment({
         id: 'comment-123',
-        content: useCasePayload.content,
-        owner: userIdFromAccessToken
+        content: 'sebuah comment',
+        publisher: 'user-321'
       })
 
-      //* * creating dependency of use case */
       const mockCommentRepository = new CommentRepository()
       const mockThreadRepository = new ThreadRepository()
 
-      /** mocking needed function */
-      mockThreadRepository.verifyExistingThread = jest.fn(() => Promise.resolve(useCaseParam.threadId))
-      mockCommentRepository.addComment = jest.fn(() => Promise.resolve(expectedAddedThread))
+      mockThreadRepository.checkAvailabilityThread = jest.fn(() => Promise.resolve())
+      mockCommentRepository.addComment = jest.fn(() => Promise.resolve(expectedAddedComment))
 
-      /** creating use case instance */
-      const commentUseCase = new CommentUseCase({
+      const getCommentUseCase = new CommentUseCase({
         commentRepository: mockCommentRepository,
         threadRepository: mockThreadRepository
       })
 
-      // Action
-      const addedComment = await commentUseCase.addComment(
-        useCaseParam,
-        useCasePayload,
-        userIdFromAccessToken
-      )
+      const addedComment = await getCommentUseCase.addComment(useCasePayload)
 
-      // Assert
-      expect(addedComment).toStrictEqual(expectedAddedThread)
-      expect(mockThreadRepository.verifyExistingThread).toBeCalledWith(
-        useCaseParam.threadId
-      )
-      expect(mockCommentRepository.addComment).toBeCalledWith(
-        new NewComment(useCasePayload),
-        useCaseParam.threadId,
-        userIdFromAccessToken
-      )
+      expect(mockThreadRepository.checkAvailabilityThread).toBeCalledWith(useCasePayload.threadId)
+      expect(addedComment).toStrictEqual(expectedAddedComment)
+      expect(mockCommentRepository.addComment).toBeCalledWith(new NewComment(useCasePayload))
     })
   })
 
   describe('deleteComment', () => {
+    it('should throw error if use case payload not contain needed property', async () => {
+      const useCasePayload = {}
+      const deleteCommentUseCase = new CommentUseCase({})
+
+      await expect(() => deleteCommentUseCase.deleteComment(useCasePayload))
+        .rejects
+        .toThrowError('DELETE_COMMENT_USE_CASE.NOT_CONTAIN_NEEDED_PROPERTY')
+    })
+
+    it('should throw error if payload not meet data type specification', async () => {
+      const useCasePayload = {
+        threadId: 123,
+        commentId: 123,
+        publisher: 1234
+      }
+      const deleteCommentUseCase = new CommentUseCase({})
+
+      await expect(() => deleteCommentUseCase.deleteComment(useCasePayload))
+        .rejects
+        .toThrowError('DELETE_COMMENT_USE_CASE.NOT_MEET_DATA_TYPE_SPECIFICATION')
+    })
+
     it('should orchestrating the delete comment action correctly', async () => {
-      // Arrange
-      const userIdFromAccessToken = 'user-123'
-
-      const useCaseParam = {
+      const useCasePayload = {
+        commentId: 'comment-123',
         threadId: 'thread-123',
-        commentId: 'comment-123'
+        publisher: 'user-123'
       }
 
-      const expectedDeletedComment = {
-        status: 'success'
-      }
-
-      /** orchestrating dependency of use case */
-      const mockCommentRepository = new CommentRepository()
       const mockThreadRepository = new ThreadRepository()
+      const mockCommentRepository = new CommentRepository()
 
-      /** mocking needed funtion */
-      mockThreadRepository.verifyExistingThread = jest.fn(() => Promise.resolve(useCaseParam.threadId))
-      mockCommentRepository.verifyExistingComment = jest.fn(() => Promise.resolve(useCaseParam.commentId))
-      mockCommentRepository.verifyCommentPublisher = jest.fn(() => Promise.resolve(useCaseParam.commentId, userIdFromAccessToken))
-      mockCommentRepository.deleteCommentById = jest.fn(() => Promise.resolve(expectedDeletedComment))
+      mockThreadRepository.checkAvailabilityThread = jest.fn()
+        .mockImplementation(() => Promise.resolve())
+      mockCommentRepository.checkAvailabilityComment = jest.fn()
+        .mockImplementation(() => Promise.resolve())
+      mockCommentRepository.verifyCommentpublisher = jest.fn()
+        .mockImplementation(() => Promise.resolve())
+      mockCommentRepository.deleteComment = jest.fn()
+        .mockImplementation(() => Promise.resolve())
 
-      /** creating use case instance */
-      const commentUseCase = new CommentUseCase({
+      const deleteCommentUseCase = new CommentUseCase({
         commentRepository: mockCommentRepository,
         threadRepository: mockThreadRepository
       })
 
-      // Action
-      const deletedComment = await commentUseCase.deleteComment(
-        useCaseParam,
-        userIdFromAccessToken
-      )
+      await deleteCommentUseCase.deleteComment(useCasePayload)
 
-      // Assert
-      expect(deletedComment).toStrictEqual(expectedDeletedComment)
-      expect(mockThreadRepository.verifyExistingThread).toBeCalledWith(
-        useCaseParam.threadId
-      )
-      expect(mockCommentRepository.verifyExistingComment).toBeCalledWith(
-        useCaseParam.commentId
-      )
-      expect(mockCommentRepository.verifyCommentPublisher).toBeCalledWith(
-        useCaseParam.commentId,
-        userIdFromAccessToken
-      )
-      expect(mockCommentRepository.deleteCommentById).toBeCalledWith(
-        useCaseParam.commentId
-      )
+      expect(mockThreadRepository.checkAvailabilityThread)
+        .toBeCalledWith(useCasePayload.threadId)
+      expect(mockCommentRepository.checkAvailabilityComment)
+        .toBeCalledWith(useCasePayload.commentId)
+      expect(mockCommentRepository.verifyCommentpublisher)
+        .toBeCalledWith(useCasePayload.commentId, useCasePayload.publisher)
+      expect(mockCommentRepository.deleteComment)
+        .toBeCalledWith(useCasePayload.commentId)
     })
   })
 })

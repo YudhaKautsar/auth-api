@@ -2,45 +2,24 @@ class DetailReply {
   constructor (payload) {
     this._verifyPayload(payload)
 
-    const {
-      id, commentId, content, date, username, isDelete
-    } = payload
-
-    this.id = id
-    this.commentId = commentId
-    this.content = content
-    this.date = date
-    this.username = username
-    this.isDelete = isDelete
+    this.id = payload.id
+    this.content = payload.is_delete ? '**balasan telah dihapus**' : payload.content
+    this.date = payload.date
+    this.username = payload.username
   }
 
   _verifyPayload (payload) {
     const {
-      id, commentId, content, date, username, isDelete
+      id, content, date, username, commentId
     } = payload
 
-    if (
-      !id ||
-      !commentId ||
-      !content ||
-      !date ||
-      !username ||
-      isDelete === undefined
-    ) {
+    if (!id || !content || !date || !username || !commentId) {
       throw new Error('DETAIL_REPLY.NOT_CONTAIN_NEEDED_PROPERTY')
     }
 
-    if (
-      typeof id !== 'string' ||
-            typeof commentId !== 'string' ||
-            typeof content !== 'string' ||
-            typeof date !== 'string' ||
-            typeof username !== 'string' ||
-            typeof isDelete !== 'boolean'
-    ) {
+    if (typeof id !== 'string' || typeof content !== 'string' || typeof date !== 'string' || typeof username !== 'string' || typeof commentId !== 'string') {
       throw new Error('DETAIL_REPLY.NOT_MEET_DATA_TYPE_SPECIFICATION')
     }
   }
 }
-
 module.exports = DetailReply

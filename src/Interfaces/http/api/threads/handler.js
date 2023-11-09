@@ -9,39 +9,37 @@ class ThreadsHandler {
   }
 
   async postThreadHandler (request, h) {
-    const { id } = request.auth.credentials
-
     const threadUseCase = this._container.getInstance(ThreadUseCase.name)
-    const addThread = await threadUseCase.addThread(request.payload, id)
+    const { id: credentialId } = request.auth.credentials
 
+    const useCasePayload = {
+      ...request.payload,
+      publisher: credentialId
+    }
+
+    const addedThread = await threadUseCase.addThread(useCasePayload)
     const response = h.response({
       status: 'success',
       data: {
-        addThread
+        addedThread
       }
     })
-
     response.code(201)
     return response
   }
 
-  async getThreadHandler (request, h) {
-    const { threadId: id } = request.params
-
-    const useCaseParam = { threadId: id }
-
+  async getDetailThreadHandler (request) {
     const threadUseCase = this._container.getInstance(ThreadUseCase.name)
-    const thread = await threadUseCase.getThread(useCaseParam)
-
-    const response = h.response({
+    const useCasePayload = {
+      threadId: request.params.threadId
+    }
+    const { thread } = await threadUseCase.getThread(useCasePayload)
+    return {
       status: 'success',
       data: {
         thread
       }
-    })
-
-    response.code(200)
-    return response
+    }
   }
 }
 

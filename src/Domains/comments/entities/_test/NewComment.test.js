@@ -1,37 +1,35 @@
 const NewComment = require('../NewComment')
 
-describe('NewComment entities', () => {
-  it('should throw error when paylaod did not contain needed property', () => {
-    // Arrange
-    const payload = {}
-
-    // Action and Assert
-    expect(() => new NewComment(payload)).toThrowError(
-      'NEW_COMMENT.NOT_CONTAIN_NEEDED_PROPERTY'
-    )
-  })
-
-  it('should throw error when payload not meet data type specification', () => {
-    // Arrange
+describe('a AddComment entities', () => {
+  it('should throw error when payload did not contain needed property', () => {
     const payload = {
-      content: 123
+      content: 'comment'
     }
 
-    expect(() => new NewComment(payload)).toThrowError(
-      'NEW_COMMENT.NOT_MEET_DATA_TYPE_SPECIFICATION'
-    )
+    expect(() => new NewComment(payload)).toThrowError('NEW_COMMENT.NOT_CONTAIN_NEEDED_PROPERTY')
   })
 
-  it('should create NewComment object correctly', () => {
-    // Arrange
+  it('should throw error when payload did not meet data type specification', () => {
     const payload = {
-      content: 'sebuah comment'
+      content: {},
+      threadId: 123,
+      publisher: []
     }
 
-    // Action
-    const newComment = new NewComment(payload)
+    expect(() => new NewComment(payload)).toThrowError('NEW_COMMENT.NOT_MEET_DATA_TYPE_SPECIFICATION')
+  })
 
-    // Assert
-    expect(newComment.content).toEqual(payload.content)
+  it('should create comment object correctly', () => {
+    const payload = {
+      content: 'comment thread',
+      threadId: 'thread-123',
+      publisher: 'user-321'
+    }
+
+    const comment = new NewComment(payload)
+
+    expect(comment.content).toEqual(payload.content)
+    expect(comment.threadId).toEqual(payload.threadId)
+    expect(comment.publisher).toEqual(payload.publisher)
   })
 })

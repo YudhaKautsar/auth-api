@@ -1,4 +1,6 @@
 const NewThread = require('../../Domains/threads/entities/NewThread')
+const DetailComment = require('../../Domains/comments/entities/DetailComment')
+const DetailReply = require('../../Domains/replies/entities/DetailReply')
 
 class ThreadUseCase {
   constructor ({ threadRepository, commentRepository, replyRepository }) {
@@ -7,46 +9,26 @@ class ThreadUseCase {
     this._replyRepository = replyRepository
   }
 
-  async addThread (useCasePayload, userIdFromAccessToken) {
+  async addThread (useCasePayload) {
     const newThread = new NewThread(useCasePayload)
 
-    return this._threadRepository.addThread(newThread, userIdFromAccessToken)
+    return this._threadRepository.addThread(newThread)
   }
 
-  async getThread (useCaseParam) {
-    const { threadId } = useCaseParam
+  async getThread (useCasePayload) {
+    const { threadId } = useCasePayload
 
-    const threadResult = await this._threadRepository.getThreadById(threadId)
-    const commentResult = await this._commentRepository.getCommentsByThreadId(threadId)
-    const repliesResult = await this._replyRepository.getRepliesByThreadId(threadId)
+    await this._threadRepository.checkAvailabilityThread(threadId)
+    const threadResult = await this._threadRepository.getDetailThread(threadId)
+    const commentResult = await this._commentRepository.getCommentThread(threadId)
+    const repliesResult = await this._replyRepository.getReply(threadId)
 
-    const replies = (commentId) => repliesResult
-      .filter((reply) => reply.commentId === commentId)
-      .map((reply) => ({
-        id: reply.id,
-        content: reply.isDelete
-          ? '**balasan telah dihapus**'
-          : reply.content,
-        date: reply.date,
-        username: reply.username
-      }))
+    threadResult.comments = commentResult.map((comment) => {
+      comment.replies = repliesResult.filter((filtered) => filtered.commentId === comment.id).map((reply) => new DetailReply(reply))
+      return new DetailComment(comment)
+    })
 
-    const comments = commentResult.map((comment) => ({
-      id: comment.id,
-      username: comment.username,
-      date: comment.date,
-      replies: replies(comment.id),
-      content: comment.isDelete
-        ? '**komentar telah dihapus**'
-        : comment.content
-    }))
-
-    const thread = {
-      ...threadResult[0],
-      comments: [...comments]
-    }
-
-    return thread
+    return { thread: threadResult }
   }
 }
 

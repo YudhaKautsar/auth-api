@@ -1,20 +1,21 @@
 class AddedReply {
   constructor (payload) {
-    this._verifyPayload(payload)
-
-    const { id, content, owner } = payload
+    this._verfyPayload(payload)
+    const { id, content, publisher } = payload
 
     this.id = id
     this.content = content
-    this.owner = owner
+    this.publisher = publisher
   }
 
-  _verifyPayload ({ id, content, owner }) {
-    if (!id || !content || !owner) {
+  _verfyPayload (payload) {
+    const { id, content, publisher } = payload
+
+    if (!id || !content || !publisher) {
       throw new Error('ADDED_REPLY.NOT_CONTAIN_NEEDED_PROPERTY')
     }
 
-    if (typeof id !== 'string' || typeof content !== 'string' || typeof owner !== 'string') {
+    if (typeof id !== 'string' || typeof content !== 'string' || typeof publisher !== 'string') {
       throw new Error('ADDED_REPLY.NOT_MEET_DATA_TYPE_SPECIFICATION')
     }
   }

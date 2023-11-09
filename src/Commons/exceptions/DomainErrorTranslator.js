@@ -26,8 +26,34 @@ DomainErrorTranslator._directories = {
   'DELETE_AUTHENTICATION_USE_CASE.NOT_CONTAIN_REFRESH_TOKEN':
          new InvariantError('harus mengirimkan token refresh'),
   'DELETE_AUTHENTICATION_USE_CASE.PAYLOAD_NOT_MEET_DATA_TYPE_SPECIFICATION':
-         new InvariantError('refresh token harus string')
-
+         new InvariantError('refresh token harus string'),
+  'ADDED_THREAD.NOT_CONTAIN_NEEDED_PROPERTY':
+         new InvariantError('tidak dapat membuat thread baru karena property yang dibutuhkan tidak ada'),
+  'ADDED_THREAD.NOT_MEET_DATA_TYPE_SPECIFICATION': new InvariantError('tidak dapat membuat thread baru karena tipe data tidak sesuai'),
+  'NEW_THREAD.NOT_CONTAIN_NEEDED_PROPERTY':
+         new InvariantError('tidak dapat membuat thread baru karena property yang dibutuhkan tidak ada'),
+  'NEW_THREAD.NOT_MEET_DATA_TYPE_SPECIFICATION':
+         new InvariantError('tidak dapat membuat thread baru karena tipe data tidak sesuai'),
+  'NEW_COMMENT.NOT_CONTAIN_NEEDED_PROPERTY':
+         new InvariantError('tidak dapat membuat comment baru karena properti yang dibutuhkan tidak ada'),
+  'NEW_COMMENT.NOT_MEET_DATA_TYPE_SPECIFICATION':
+         new InvariantError('tidak dapat membuat comment baru karena tipe data tidak sesuai'),
+  'ADDED_COMMENT.NOT_CONTAIN_NEEDED_PROPERTY':
+         new InvariantError('tidak dapat membuat comment baru karena properti yang dibutuhkan tidak ada'),
+  'ADDED_COMMENT.NOT_MEET_DATA_TYPE_SPECIFICATION':
+         new InvariantError('tidak dapat membuat comment baru karena tipe data tidak sesuai'),
+  'ADDED_REPLY.NOT_CONTAIN_NEEDED_PROPERTY':
+         new InvariantError('tidak dapat menambahkan balasan baru karena properti yang dibutuhkan tidak ada'),
+  'ADDED_REPLY.NOT_MEET_DATA_TYPE_SPECIFICATION':
+         new InvariantError('tidak dapat menambahkan balasan baru karena tipe data tidak sesuai'),
+  'NEW_REPLY.NOT_CONTAIN_NEEDED_PROPERTY':
+         new InvariantError('tidak dapat membuat reply baru karena properti yang dibutuhkan tidak ada'),
+  'NEW_REPLY.NOT_MEET_DATA_TYPE_SPECIFICATION':
+         new InvariantError('tidak dapat membuat reply baru karena tipe data tidak sesuai'),
+  'DETAIL_REPLY.NOT_CONTAIN_NEEDED_PROPERTY':
+         new InvariantError('tidak dapat menampikan balasan karena properti yang dibutuhkan tidak ada'),
+  'DETAIL_REPLY.NOT_MEET_DATA_TYPE_SPECIFICATION':
+        new InvariantError('tidak dapat menampilkan balasan karena tipe data tidak sesuai')
 }
 
 module.exports = DomainErrorTranslator

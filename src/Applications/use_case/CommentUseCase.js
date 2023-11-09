@@ -6,28 +6,33 @@ class CommentUseCase {
     this._threadRepository = threadRepository
   }
 
-  async addComment (useCaseParam, useCasePayload, userIdFromAccessToken) {
-    const { threadId } = useCaseParam
+  async addComment (useCasePayload) {
+    const { threadId } = useCasePayload
 
-    await this._threadRepository.verifyExistingThread(threadId)
-
-    const newComment = new NewComment(useCasePayload)
-
-    return this._commentRepository.addComment(
-      newComment,
-      threadId,
-      userIdFromAccessToken
-    )
+    await this._threadRepository.checkAvailabilityThread(threadId)
+    const comment = new NewComment(useCasePayload)
+    return this._commentRepository.addComment(comment)
   }
 
-  async deleteComment (useCaseParam, userIdFromAccessToken) {
-    const { threadId, commentId } = useCaseParam
+  async deleteComment (useCasePayload) {
+    this._verifyPayload(useCasePayload)
+    const { commentId, threadId, publisher } = useCasePayload
+    await this._threadRepository.checkAvailabilityThread(threadId)
+    await this._commentRepository.checkAvailabilityComment(commentId)
+    await this._commentRepository.verifyCommentpublisher(commentId, publisher)
+    await this._commentRepository.deleteComment(commentId)
+  }
 
-    await this._threadRepository.verifyExistingThread(threadId)
-    await this._commentRepository.verifyExistingComment(commentId)
-    await this._commentRepository.verifyCommentPublisher(commentId, userIdFromAccessToken)
+  _verifyPayload (payload) {
+    const { commentId, threadId, publisher } = payload
 
-    return this._commentRepository.deleteCommentById(commentId)
+    if (!commentId || !threadId || !publisher) {
+      throw new Error('DELETE_COMMENT_USE_CASE.NOT_CONTAIN_NEEDED_PROPERTY')
+    }
+
+    if (typeof commentId !== 'string' || typeof threadId !== 'string' || typeof publisher !== 'string') {
+      throw new Error('DELETE_COMMENT_USE_CASE.NOT_MEET_DATA_TYPE_SPECIFICATION')
+    }
   }
 }
 

@@ -1,5 +1,4 @@
 const ThreadRepository = require('../../Domains/threads/ThreadRepository')
-const { mapThreadDbToModel } = require('../../Commons/utils')
 const AddedThread = require('../../Domains/threads/entities/AddedThread')
 const NotFoundError = require('../../Commons/exceptions/NotFoundError')
 
@@ -10,49 +9,40 @@ class ThreadRepositoryPostgres extends ThreadRepository {
     this._idGenerator = idGenerator
   }
 
-  async addThread (newThread, owner) {
-    const { title, body } = newThread
+  async addThread (payload) {
+    const { title, body, publisher } = payload
     const id = `thread-${this._idGenerator()}`
+    const createDate = new Date()
 
     const query = {
-      text: 'INSERT INTO threads(id, title, body, publisher) VALUES($1, $2, $3, $4) RETURNING id, title, publisher',
-      values: [id, title, body, owner]
+      text: 'INSERT INTO threads VALUES ($1, $2, $3, $4, $5) RETURNING id, title, publisher',
+      values: [id, title, body, publisher, createDate]
     }
 
     const result = await this._pool.query(query)
 
-    return new AddedThread(result.rows.map(mapThreadDbToModel)[0])
+    return new AddedThread({ ...result.rows[0] })
   }
 
-  async getThreadById (id) {
+  async checkAvailabilityThread (threadId) {
     const query = {
-      text: `SELECT threads.id, threads.title, threads.body, threads.date, users.username
-        FROM threads
-        INNER JOIN users ON threads.publisher = users.id
-        WHERE threads.id = $1`,
-      values: [id]
+      text: 'SELECT * FROM threads WHERE id = $1',
+      values: [threadId]
     }
 
     const result = await this._pool.query(query)
 
     if (!result.rowCount) {
-      throw new NotFoundError('Thread tidak ditemukan')
+      throw new NotFoundError('thread tidak ditemukan')
     }
-
-    return result.rows
   }
 
-  async verifyExistingThread (id) {
-    const query = {
-      text: 'SELECT id FROM threads WHERE id = $1',
-      values: [id]
-    }
+  async getDetailThread (threadId) {
+    const query = { text: 'SELECT * FROM threads A LEFT JOIN users B ON A.publisher = B.id WHERE A.id = $1', values: [threadId] }
 
     const result = await this._pool.query(query)
 
-    if (!result.rowCount) {
-      throw new NotFoundError('Thread tidak ditemukan')
-    }
+    return result.rows[0]
   }
 }
 

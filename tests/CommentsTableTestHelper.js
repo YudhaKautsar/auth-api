@@ -1,17 +1,18 @@
 /* istanbul ignore file */
-
 const pool = require('../src/Infrastructures/database/postgres/pool')
 
 const CommentsTableTestHelper = {
   async addComment ({
     id = 'comment-123',
-    threadId = 'thread-123',
-    owner = 'user-123',
-    content = 'sebuah komentar'
+    content = 'sebuah content comment',
+    publisher = 'user-321',
+    date = new Date(),
+    isDelete = false,
+    threadId = 'thread-123'
   }) {
     const query = {
-      text: 'INSERT INTO comments(id, thread_id, publisher, content) VALUES($1, $2, $3, $4)',
-      values: [id, threadId, owner, content]
+      text: 'INSERT INTO comments VALUES($1, $2, $3, $4, $5, $6)',
+      values: [id, content, publisher, date, isDelete, threadId]
     }
 
     await pool.query(query)
@@ -19,19 +20,25 @@ const CommentsTableTestHelper = {
 
   async findCommentById (id) {
     const query = {
-      text: `SELECT C.id, C.date, C.content, C.is_delete, U.username
-        FROM comments C
-        INNER JOIN users U ON C.publisher = U.id
-        WHERE C.id = $1`,
+      text: 'SELECT * FROM comments WHERE id = $1',
       values: [id]
     }
-
     const result = await pool.query(query)
 
     return result.rows
   },
 
-  async deleteCommentById (id) {
+  async checkIsDeletedCommentsById (id) {
+    const query = {
+      text: 'SELECT is_delete FROM comments WHERE id = $1',
+      values: [id]
+    }
+
+    const result = await pool.query(query)
+    return result.rows[0].is_delete
+  },
+
+  async deleteComment (id) {
     const query = {
       text: 'UPDATE comments SET is_delete = true WHERE id = $1',
       values: [id]

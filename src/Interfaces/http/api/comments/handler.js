@@ -9,17 +9,17 @@ class CommentsHandler {
   }
 
   async postCommentHandler (request, h) {
-    const { id } = request.auth.credentials
+    const commentUseCase = this._container.getInstance(CommentUseCase.name)
+    const { id: credentialId } = request.auth.credentials
+    const { threadId } = request.params
 
-    const commentUseCase = this._container.getInstance(
-      CommentUseCase.name
-    )
+    const useCasePayload = {
+      content: request.payload.content,
+      threadId,
+      publisher: credentialId
+    }
 
-    const addedComment = await commentUseCase.execute(
-      request.params,
-      request.payload,
-      id
-    )
+    const addedComment = await commentUseCase.addComment(useCasePayload)
 
     const response = h.response({
       status: 'success',
@@ -27,26 +27,26 @@ class CommentsHandler {
         addedComment
       }
     })
-
     response.code(201)
     return response
   }
 
   async deleteCommentHandler (request, h) {
-    const { id } = request.auth.credentials
+    const commentUseCase = this._container.getInstance(CommentUseCase.name)
+    const { id: credentialId } = request.auth.credentials
+    const { threadId, commentId } = request.params
 
-    const commentUseCase = this._container.getInstance(
-      CommentUseCase.name
-    )
+    const useCasePayload = {
+      threadId,
+      commentId,
+      publisher: credentialId
+    }
 
-    await commentUseCase.execute(request.params, id)
+    await commentUseCase.deleteComment(useCasePayload)
 
-    const response = h.response({
+    return h.response({
       status: 'success'
     })
-
-    response.code(200)
-    return response
   }
 }
 

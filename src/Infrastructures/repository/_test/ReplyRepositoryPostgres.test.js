@@ -1,194 +1,241 @@
-const CommentsTableTestHelper = require('../../../../tests/CommentsTableTestHelper')
-const RepliesTableTestHelper = require('../../../../tests/RepliesTableTestHelper')
-const ThreadsTableTestHelper = require('../../../../tests/ThreadsTableTestHelper')
+const ReplyTableTestHelper = require('../../../../tests/RepliesTableTestHelper')
 const UsersTableTestHelper = require('../../../../tests/UsersTableTestHelper')
-const ReplyRepository = require('../../../Domains/replies/ReplyRepository')
+const ThreadsTableTestHelper = require('../../../../tests/ThreadsTableTestHelper')
+const CommentsTableTestHelper = require('../../../../tests/CommentsTableTestHelper')
 const ReplyRepositoryPostgres = require('../ReplyRepositoryPostgres')
-const pool = require('../../database/postgres/pool')
 const NewReply = require('../../../Domains/replies/entities/NewReply')
 const AddedReply = require('../../../Domains/replies/entities/AddedReply')
-const NotFoundError = require('../../../Commons/exceptions/NotFoundError')
 const AuthorizationError = require('../../../Commons/exceptions/AuthorizationError')
-const InvariantError = require('../../../Commons/exceptions/InvariantError')
+const NotFoundError = require('../../../Commons/exceptions/NotFoundError')
+const pool = require('../../database/postgres/pool')
 
 describe('ReplyRepositoryPostgres', () => {
-  it('shuld be instance of ReplyRepository domain', () => {
-    const replyRepositoryPostgres = new ReplyRepositoryPostgres({}, {})
-
-    expect(replyRepositoryPostgres).toBeInstanceOf(ReplyRepository)
+  afterEach(async () => {
+    await ReplyTableTestHelper.cleanTable()
+    await UsersTableTestHelper.cleanTable()
+    await ThreadsTableTestHelper.cleanTable()
+    await CommentsTableTestHelper.cleanTable()
   })
 
-  describe('behavior test', () => {
-    afterEach(async () => {
-      await RepliesTableTestHelper.cleanTable()
-      await CommentsTableTestHelper.cleanTable()
-      await ThreadsTableTestHelper.cleanTable()
-      await UsersTableTestHelper.cleanTable()
+  afterAll(async () => {
+    await pool.end()
+  })
+
+  describe('addReply function', () => {
+    it('should persist add reply and return added reply correctly', async () => {
+      await UsersTableTestHelper.addUser({ id: 'user-123', username: 'kautsar' })
+      await ThreadsTableTestHelper.addThread({
+        id: 'thread-123',
+        title: 'sebuah title thread',
+        body: 'sebuah body',
+        date: new Date(),
+        publisherId: 'user-123'
+      })
+      await CommentsTableTestHelper.addComment({
+        id: 'comment-123',
+        content: 'sebuah comment',
+        publisher: 'user-123',
+        threadId: 'thread-123'
+      })
+
+      const addReply = new NewReply({
+        content: 'sebuah reply',
+        publisher: 'user-123',
+        commentId: 'comment-123',
+        threadId: 'thread-123'
+      })
+
+      const fakeIdGnerator = () => '123'
+      const replyRepositoryPostgres = new ReplyRepositoryPostgres(pool, fakeIdGnerator)
+
+      const addedReply = await replyRepositoryPostgres.addReply(addReply)
+
+      const reply = await ReplyTableTestHelper.findReplyById('reply-123')
+      expect(addedReply).toStrictEqual(new AddedReply({
+        id: 'reply-123',
+        content: 'sebuah reply',
+        publisher: 'user-123'
+      }))
+      expect(reply).toHaveLength(1)
+    })
+  })
+
+  describe('checkAvailabilityReply function', () => {
+    it('should throw NotFoundError when reply not available', async () => {
+      const replyRepositoryPostgres = new ReplyRepositoryPostgres(pool, {})
+
+      await expect(replyRepositoryPostgres.checkAvailabilityReply('reply-123')).rejects.toThrowError(NotFoundError)
     })
 
-    afterAll(async () => {
-      await pool.end()
+    it('should throw AuthorizationError when reply not owned by user', async () => {
+      await UsersTableTestHelper.addUser({ id: 'user-123', username: 'kautsar' })
+      await ThreadsTableTestHelper.addThread({
+        id: 'thread-123',
+        title: 'sebuah title thread',
+        body: 'sebuah body',
+        date: new Date(),
+        publisherId: 'user-123'
+      })
+      await CommentsTableTestHelper.addComment({
+        id: 'comment-123',
+        content: 'sebuah comment',
+        publisher: 'user-123',
+        threadId: 'thread-123'
+      })
+
+      const fakeIdGnerator = () => '123'
+      const replyRepositoryPostgres = new ReplyRepositoryPostgres(pool, fakeIdGnerator)
+
+      const addReply = new NewReply({
+        content: 'sebuah reply',
+        publisher: 'user-123',
+        commentId: 'comment-123',
+        threadId: 'thread-123'
+      })
+
+      await replyRepositoryPostgres.addReply(addReply)
+
+      await expect(replyRepositoryPostgres.checkAvailabilityReply('reply-123')).resolves.not.toThrowError(NotFoundError)
     })
+  })
 
-    describe('addReply function', () => {
-      it('should create new reply and return added reply correctly', async () => {
-        // Arrange
-        await UsersTableTestHelper.addUser({ id: 'user-123', username: 'dicoding' })
-        await ThreadsTableTestHelper.addThread({
-          id: 'thread-123',
-          title: 'sebuah title thread',
-          body: 'sebuah body thread',
-          date: new Date(),
-          ownerId: 'user-123'
-        })
-        await CommentsTableTestHelper.addComment({
-          id: 'comment-123',
-          content: 'sebuah comment',
-          owner: 'user-123',
-          threadId: 'thread-123'
-        })
-
-        const newReply = new NewReply({
-          content: 'sebuan balasan',
-          owner: 'user-123',
-          commentId: 'comment-123',
-          threadId: 'thread-123'
-        })
-
-        const fakeIdGenerator = () => '123'
-        const replyRepositoryPostgres = new ReplyRepositoryPostgres(
-          pool,
-          fakeIdGenerator
-        )
-
-        // Action
-        const addedReply = await replyRepositoryPostgres.addReply(newReply)
-
-        // Assert
-        const reply = await RepliesTableTestHelper.findReplyById('reply-123')
-
-        expect(addedReply).toStrictEqual(
-          new AddedReply({
-            id: `reply-${fakeIdGenerator()}`,
-            content: 'sebuah balasan',
-            owner: 'user-123'
-          })
-        )
-        expect(reply).toBeDefined()
+  describe('verifyReplyPublisher function', () => {
+    it('should throw AuthorizationError when reply not owned by user', async () => {
+      await UsersTableTestHelper.addUser({ id: 'user-123', username: 'kautsar' })
+      await ThreadsTableTestHelper.addThread({
+        id: 'thread-123',
+        title: 'sebuah title thread',
+        body: 'sebuah body',
+        date: new Date(),
+        publisherId: 'user-123'
       })
+
+      await CommentsTableTestHelper.addComment({
+        id: 'comment-123',
+        content: 'sebuah comment',
+        publisher: 'user-123',
+        threadId: 'thread-123'
+      })
+
+      await ReplyTableTestHelper.addReply({
+        id: 'reply-123',
+        content: 'sebuah reply',
+        publisher: 'user-123',
+        commentId: 'comment-123',
+        threadId: 'thread-123'
+      })
+
+      const replyRepositoryPostgres = new ReplyRepositoryPostgres(pool, {})
+
+      await expect(replyRepositoryPostgres.verifyReplyPublisher('xxx', 'user-123'))
+        .rejects.toThrowError(AuthorizationError)
     })
+  })
 
-    describe('getRepliesByThreadId function', () => {
-      it('should return replies correctly', async () => {
-        // Arrange
-        await UsersTableTestHelper.addUser({})
-        await ThreadsTableTestHelper.addThread({})
-        await CommentsTableTestHelper.addComment({})
-        await RepliesTableTestHelper.addReply({})
-        await RepliesTableTestHelper.addReply({ id: 'reply-666' })
-        await RepliesTableTestHelper.addReply({ id: 'reply-777' })
-
-        const replyRepositoryPostgres = new ReplyRepositoryPostgres(pool, {})
-
-        // Action
-        const replies = await replyRepositoryPostgres.getRepliesByThreadId(
-          'thread-123'
-        )
-
-        // Assert
-        expect(replies).toHaveLength(3)
+  describe('deleteReply function', () => {
+    it('should delete reply from database', async () => {
+      await UsersTableTestHelper.addUser({ id: 'user-123', username: 'kautsar' })
+      await ThreadsTableTestHelper.addThread({
+        id: 'thread-123',
+        title: 'sebuah title thread',
+        body: 'sebuah body',
+        date: new Date(),
+        publisherId: 'user-123'
       })
+
+      await CommentsTableTestHelper.addComment({
+        id: 'comment-123',
+        content: 'sebuah comment',
+        publisher: 'user-123',
+        threadId: 'thread-123'
+      })
+
+      await ReplyTableTestHelper.addReply({
+        id: 'reply-123',
+        content: 'sebuah reply',
+        publisher: 'user-123',
+        commentId: 'comment-123',
+        threadId: 'thread-123'
+      })
+
+      const replyRepositoryPostgres = new ReplyRepositoryPostgres(pool, {})
+
+      await replyRepositoryPostgres.deleteReply('reply-123')
+
+      const reply = await ReplyTableTestHelper.checkIsDeletedReplyById('reply-123')
+      expect(reply).toEqual(true)
     })
+  })
 
-    describe('verifyReplyPublisher function', () => {
-      it('should throw NotFoundError when the reply not found', async () => {
-        // Arrange
-        const replyRepositoryPostgres = new ReplyRepositoryPostgres(pool, {})
+  describe('getCommentReplies function', () => {
+    it('should return replies correctly', async () => {
+      const userPayload = { id: 'user-123', username: 'kautsar' }
+      const threadPayload = {
+        id: 'thread-123',
+        title: 'sebuah thread title',
+        body: 'sebuah body',
+        publisher: 'user-123'
+      }
+      const commentPayload = {
+        id: 'comment-123',
+        content: 'sebuah comment',
+        publisher: 'user-123',
+        threadId: 'thread-123'
+      }
+      const replyPayload = {
+        id: 'reply-123',
+        content: 'sebuah reply',
+        publisher: 'user-123',
+        commentId: 'comment-123',
+        threadId: 'thread-123'
+      }
 
-        // Action and Assert
-        await expect(
-          replyRepositoryPostgres.verifyReplyPublisher('reply-xxx', 'user-123')
-        ).rejects.toThrowError(NotFoundError)
-      })
+      await UsersTableTestHelper.addUser(userPayload)
+      await ThreadsTableTestHelper.addThread(threadPayload)
+      await CommentsTableTestHelper.addComment(commentPayload)
+      await ReplyTableTestHelper.addReply(replyPayload)
 
-      it('should throw AuthorizationError when the user is not publisher of the reply', async () => {
-        // Arrange
-        await UsersTableTestHelper.addUser({})
-        await ThreadsTableTestHelper.addThread({})
-        await CommentsTableTestHelper.addComment({})
-        await RepliesTableTestHelper.addReply({})
+      const replyRepositoryPostgres = new ReplyRepositoryPostgres(pool, {})
 
-        const replyRepositoryPostgres = new ReplyRepositoryPostgres(pool, {})
-
-        // Action and Assert
-        await expect(
-          replyRepositoryPostgres.verifyReplyPublisher('reply-123', 'user-xxx')
-        ).rejects.toThrowError(AuthorizationError)
-      })
-
-      it('should resolve when the user is publisher of the reply', async () => {
-        // Arrange
-        await UsersTableTestHelper.addUser({})
-        await ThreadsTableTestHelper.addThread({})
-        await CommentsTableTestHelper.addComment({})
-        await RepliesTableTestHelper.addReply({})
-
-        const replyRepositoryPostgres = new ReplyRepositoryPostgres(pool, {})
-
-        // Action and Assert
-        await expect(
-          replyRepositoryPostgres.verifyReplyPublisher('reply-123', 'user-123')
-        ).resolves.not.toThrowError(InvariantError)
-      })
+      const replies = await replyRepositoryPostgres.getCommentReplies('comment-123')
+      expect(Array.isArray(replies)).toBe(true)
+      expect(replies).toHaveLength(1)
     })
+  })
 
-    describe('deleteReplyById function', () => {
-      it('should throw NotFoundError when the reply not found', async () => {
-        // Arrange
-        await UsersTableTestHelper.addUser({})
-        await ThreadsTableTestHelper.addThread({})
-        await CommentsTableTestHelper.addComment({})
-        await RepliesTableTestHelper.addReply({})
+  describe('getReply functiom', () => {
+    it('should return replies correctly', async () => {
+      const userPayload = { id: 'user-123', username: 'kautsar' }
+      const threadPayload = {
+        id: 'thread-123',
+        title: 'sebuah thread title',
+        body: 'sebuah body',
+        publisher: 'user-123'
+      }
+      const commentPayload = {
+        id: 'comment-123',
+        content: 'sebuah comment',
+        publisher: 'user-123',
+        threadId: 'thread-123'
+      }
+      const replyPayload = {
+        id: 'reply-123',
+        content: 'sebuah reply',
+        publisher: 'user-123',
+        commentId: 'comment-123',
+        threadId: 'thread-123'
+      }
 
-        const replyRepositoryPostgres = new ReplyRepositoryPostgres(pool, {})
+      await UsersTableTestHelper.addUser(userPayload)
+      await ThreadsTableTestHelper.addThread(threadPayload)
+      await CommentsTableTestHelper.addComment(commentPayload)
+      await ReplyTableTestHelper.addReply(replyPayload)
 
-        // Action and Assert
-        await expect(
-          replyRepositoryPostgres.deleteReplyById('reply-xxx')
-        ).rejects.toThrowError(NotFoundError)
-      })
-    })
+      const replyRepositoryPostgres = new ReplyRepositoryPostgres(pool, {})
 
-    describe('verifyExistingReply function', () => {
-      it('should throw NotFoundError when the reply not found', async () => {
-        // Arrange
-        await UsersTableTestHelper.addUser({})
-        await ThreadsTableTestHelper.addThread({})
-        await CommentsTableTestHelper.addComment({})
-        await RepliesTableTestHelper.addReply({})
-
-        const replyRepositoryPostgres = new ReplyRepositoryPostgres(pool, {})
-
-        // Action and Assert
-        await expect(
-          replyRepositoryPostgres.verifyExistingReply('reply-xxx')
-        ).rejects.toThrowError(NotFoundError)
-      })
-
-      it('should resolve when the reply is found', async () => {
-        // Arrange
-        await UsersTableTestHelper.addUser({})
-        await ThreadsTableTestHelper.addThread({})
-        await CommentsTableTestHelper.addComment({})
-        await RepliesTableTestHelper.addReply({})
-
-        const replyRepositoryPostgres = new ReplyRepositoryPostgres(pool, {})
-
-        // Action and Assert
-        await expect(
-          replyRepositoryPostgres.verifyExistingReply('reply-123')
-        ).resolves.not.toThrowError(InvariantError)
-      })
+      const replies = await replyRepositoryPostgres.getReply('thread-123')
+      expect(Array.isArray(replies)).toBe(true)
+      expect(replies).toHaveLength(1)
     })
   })
 })

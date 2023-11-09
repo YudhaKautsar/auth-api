@@ -9,15 +9,18 @@ class RepliesHandler {
   }
 
   async postReplyHandler (request, h) {
-    const { id } = request.auth.credentials
-
     const replyUseCase = this._container.getInstance(ReplyUseCase.name)
+    const { id: publisher } = request.auth.credentials
+    const { threadId, commentId } = request.params
 
-    const addedReply = await replyUseCase.addReply(
-      request.params,
-      request.payload,
-      id
-    )
+    const useCasePayload = {
+      content: request.payload.content,
+      threadId,
+      commentId,
+      publisher
+    }
+
+    const addedReply = await replyUseCase.addReply(useCasePayload)
 
     const response = h.response({
       status: 'success',
@@ -25,24 +28,28 @@ class RepliesHandler {
         addedReply
       }
     })
-
     response.code(201)
     return response
   }
 
   async deleteReplyHandler (request, h) {
-    const { id } = request.auth.credentials
-
     const replyUseCase = this._container.getInstance(ReplyUseCase.name)
+    const { id: publisher } = request.auth.credentials
+    const { threadId, commentId, replyId } = request.params
 
-    await replyUseCase.deleteReply(request.params, id)
+    const useCasePayload = {
+      threadId,
+      commentId,
+      replyId,
+      publisher
+    }
 
-    const response = h.response({
-      status: 'success'
-    })
+    await replyUseCase.deleteReply(useCasePayload)
 
-    response.code(200)
-    return response
+    return {
+      status: 'success',
+      message: 'balasan berhasil dihapus'
+    }
   }
 }
 

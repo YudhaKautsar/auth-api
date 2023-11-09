@@ -3,7 +3,7 @@ const routes = (handler) => [
     method: 'POST',
     path: '/threads/{threadId}/comments',
     handler: handler.postCommentHandler,
-    option: {
+    options: {
       auth: 'forumapp_jwt'
     }
   },
@@ -11,7 +11,7 @@ const routes = (handler) => [
     method: 'DELETE',
     path: '/threads/{threadId}/comments/{commentId}',
     handler: handler.deleteCommentHandler,
-    option: {
+    options: {
       auth: 'forumapp_jwt'
     }
   }

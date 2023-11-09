@@ -1,55 +1,66 @@
 const DetailReply = require('../DetailReply')
 
-describe('DetailReply entities', () => {
-  it('should throw error when payload did not contain needed property', () => {
-    const payload = {
-      username: 'dicoding',
-      content: 'sebuah balasan'
-    }
+describe('a DetailReply entities', () => {
+  it('shoult throw error when payload did not contain needed property', () => {
+    const payload = {}
 
-    // Action and Assert
-    expect(() => new DetailReply(payload)).toThrowError(
-      'DETAIL_REPLY.NOT_CONTAIN_NEEDED_PROPERTY'
-    )
+    expect(() => new DetailReply(payload)).toThrowError('DETAIL_REPLY.NOT_CONTAIN_NEEDED_PROPERTY')
   })
 
-  it('should throw error when payload did not meet data specification', () => {
-    // Arrange
+  it('should throw error when payload did not meet data type specification', () => {
     const payload = {
-      id: 999,
-      commentId: [],
-      content: true,
-      date: 2023,
-      username: 'dicoding',
-      isDelete: false
+      id: 123,
+      content: 'sebuah reply',
+      date: 53,
+      username: 123,
+      is_delete: [],
+      commentId: {}
     }
 
-    // Action and Assert
-    expect(() => new DetailReply(payload)).toThrowError(
-      'DETAIL_REPLY.NOT_MEET_DATA_TYPE_SPECIFICATION'
-    )
+    expect(() => new DetailReply(payload)).toThrowError('DETAIL_REPLY.NOT_MEET_DATA_TYPE_SPECIFICATION')
   })
 
-  it('should create detailReply object correctly', () => {
-    // Arrange
+  it('should deleted property correctly', () => {
     const payload = {
       id: 'reply-123',
-      commentId: 'comment-123',
-      content: 'sebuah balasan',
-      date: '2023-11-01T00:45:45.775Z',
-      username: 'dicoding',
-      isDelete: false
+      content: 'sebuah comment yang telah dihapus',
+      date: '2023-11-08T21:56:29.033Z',
+      username: 'kautsar',
+      is_delete: true,
+      commentId: 'comment-123'
     }
 
-    // Action
-    const detailReply = new DetailReply(payload)
+    const reply = new DetailReply(payload)
 
-    // Assert
-    expect(detailReply.id).toEqual(payload.id)
-    expect(detailReply.commentId).toEqual(payload.commentId)
-    expect(detailReply.content).toEqual(payload.content)
-    expect(detailReply.date).toEqual(payload.date)
-    expect(detailReply.username).toEqual(payload.username)
-    expect(detailReply.isDelete).toEqual(payload.isDelete)
+    const expectedReply = {
+      id: 'reply-123',
+      content: '**balasan telah dihapus**',
+      date: '2023-11-08T21:56:29.033Z',
+      username: 'kautsar'
+    }
+
+    expect(reply).toEqual(expectedReply)
+  })
+
+  it('should create DetailedReply object correctly', () => {
+    const payload = {
+      id: 'reply-123',
+      content: 'sebuah comment',
+      date: '2023-11-08T20:56:29.033Z',
+      username: 'kautsar',
+      is_delete: false,
+      commentId: 'comment-123'
+    }
+
+    const reply = new DetailReply(payload)
+
+    const expectedReply = {
+      id: 'reply-123',
+      content: 'sebuah comment',
+      date: '2023-11-08T20:56:29.033Z',
+      username: 'kautsar'
+    }
+
+    expect(reply).toEqual(expectedReply)
   })
 })

@@ -1,29 +1,17 @@
-exports.up = pgm => {
+/* eslint-disable camelcase */
+
+exports.up = (pgm) => {
   pgm.createTable('replies', {
     id: {
       type: 'VARCHAR(50)',
       primaryKey: true
     },
-    thread_id: {
+    content: {
       type: 'VARCHAR(50)',
-      notNull: true,
-      references: 'threads',
-      onDelete: 'CASCADE'
-    },
-    comment_id: {
-      type: 'VARCHAR(50)',
-      notNull: true,
-      references: 'comments',
-      onDelete: 'CASCADE'
+      notNull: true
     },
     publisher: {
       type: 'VARCHAR(50)',
-      notNull: true,
-      references: 'users',
-      onDelete: 'CASCADE'
-    },
-    content: {
-      type: 'TEXT',
       notNull: true
     },
     date: {
@@ -34,12 +22,23 @@ exports.up = pgm => {
     is_delete: {
       type: 'BOOLEAN',
       notNull: true,
-      default: false
+      defaultValue: false
+    },
+    comment_id: {
+      type: 'VARCHAR(50)',
+      notNull: true
+    },
+    thread_id: {
+      type: 'VARCHAR(50)',
+      notNull: true
     }
-
   })
+
+  pgm.addConstraint('replies', 'fk_replies_publisher_user_id', 'FOREIGN KEY(publisher) REFERENCES users(id) ON DELETE CASCADE')
+  pgm.addConstraint('replies', 'fk_replies_comment_id_comments_id', 'FOREIGN KEY(comment_id) REFERENCES comments(id) ON DELETE CASCADE')
+  pgm.addConstraint('replies', 'fk_replies_thread_id_threads_id', 'FOREIGN KEY(thread_id) REFERENCES threads(id) ON DELETE CASCADE')
 }
 
-exports.down = pgm => {
+exports.down = (pgm) => {
   pgm.dropTable('replies')
 }
